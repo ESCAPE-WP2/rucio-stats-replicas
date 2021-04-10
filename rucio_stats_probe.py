@@ -135,7 +135,6 @@ def _print_rse_usage(push_to_es=False, es_url=None):
 def _print_scope_usage(push_to_es=False, es_url=None):
     """
     print usage of scopes, optionally push to ES datasource
-    return: experiment usage map
     """
     print("TOTAL USAGE (SCOPE):")
 
