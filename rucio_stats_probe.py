@@ -266,7 +266,7 @@ def _print_experiment_usage(push_to_es=False, es_url=None):
         rucio_experiment_stats["producer"] = "escape_wp2"
         rucio_experiment_stats["type"] = "rucio_experiment_stats"
         rucio_experiment_stats["timestamp"] = int(time.time())
-        # # schema:rucio_experiment_stats (experiments total)
+        # schema:rucio_experiment_stats (experiments total)
         rucio_experiment_stats["total_used"] = experiment_total_used
         _post_to_es(es_url, rucio_experiment_stats)
 
