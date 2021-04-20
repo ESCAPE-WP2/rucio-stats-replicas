@@ -1,9 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+#Need python3 for my enviroment
 
 # import all needed rucio clients
 from rucio.client.rseclient import RSEClient
 from rucio.client.scopeclient import ScopeClient
 from rucio.client.didclient import DIDClient
+from rucio.client.replicaclient import ReplicaClient
+
 
 # import misc
 import math
@@ -85,6 +88,19 @@ def _setup_experiments():
         experiment_map[experiment]["total_files_bytes"] = 0
 
 
+def _print_qos(rse_name):
+    """
+    print qos
+    """
+    rse_atr = RSEClient().list_rse_attributes(rse_name)
+    rse_qos = "NULL"
+    if 'QOS' in rse_atr:
+        rse_qos = rse_atr['QOS']
+        print("\t" + "QoS:", rse_qos)
+    else:
+        print("\t" + "QoS:", rse_qos)
+
+
 def _print_rse_usage(push_to_es=False, es_url=None):
     """
     print usage of rses, optionally push to an ES datasource
@@ -96,6 +112,7 @@ def _print_rse_usage(push_to_es=False, es_url=None):
     rses_list = list(rse_client.list_rses())
     for rse in rses_list:
         rse_name = rse['rse']
+        rse_qos = _print_qos(rse_name)
         for rse_usage in rse_client.get_rse_usage(rse_name):
 
             if rse_usage['source'] != "rucio":
@@ -112,10 +129,11 @@ def _print_rse_usage(push_to_es=False, es_url=None):
             if push_to_es:
                 rucio_rse_stats = {}
                 rucio_rse_stats["producer"] = "escape_wp2"
-                rucio_rse_stats["type"] = "rucio_rse_stats"
+                rucio_rse_stats["type"] = "alba_rse_stats"
                 rucio_rse_stats["timestamp"] = int(time.time())
                 # schema:rucio_rse_stats (rse)
                 rucio_rse_stats["rse"] = rse_name
+                rucio_rse_stats["qos"] = rse_qos
                 rucio_rse_stats["files"] = int(rse_usage['files'])
                 rucio_rse_stats["used_bytes"] = int(rse_usage['used'])
                 _post_to_es(es_url, rucio_rse_stats)
@@ -125,7 +143,7 @@ def _print_rse_usage(push_to_es=False, es_url=None):
     if push_to_es:
         rucio_rse_stats = {}
         rucio_rse_stats["producer"] = "escape_wp2"
-        rucio_rse_stats["type"] = "rucio_rse_stats"
+        rucio_rse_stats["type"] = "alba_rse_stats"
         rucio_rse_stats["timestamp"] = int(time.time())
         # schema:rucio_rse_stats (rses total)
         rucio_rse_stats["total_used"] = int(rses_total_used)
@@ -181,10 +199,47 @@ def _print_scope_usage(push_to_es=False, es_url=None):
                 "\t>> Inconsistent number of DIDS | dids_count:{} != all_dids_count:{} <<"
                 .format(dids_count, all_dids_count))
 
+        # Replica
+        # This if is just for testing
+        scope_limit = ['ESCAPE_CERN_TEAM-noise', 'SKA_SKAO_TEAM_MFT', 'MAGIC_PIC_BRUZZESE-test', 'SKA_SKAO_COLLINSON', 'SKA_SKAO_JOSHI-testing', 'CTA_LAPP_FREDERIC', 'LSST_CCIN2P3_GOUNON', 'SKA_SKAO_COLL-testing', 'SKA_SKAO_TEAM_PSS']
+        if scope not in scope_limit:
+            # List total amount of dids in this scope
+            # This is tmp, because the program don't want me to use the same did_len variable IDK why
+            dids_c = int(len(dids))
+            print(dids_c)
+            # Init variable for the loop (tmp, just for checking)
+            variable = 0
+            tReplica_pScope = []
+            # Loop: for all dids in this scope
+            for dids_c in dids:
+                did_name = dids_c['name']
+                did_scope = dids_c['scope']
+                # Replica part (all info) for a specific data (name:scope) in this scope
+                replicas = []
+                for replica in ReplicaClient().list_replicas(dids=[{"scope": did_scope, "name": did_name}],rse_expression=None):
+                    replicas.append(replica)
+                    # For the State (availability) info
+                    replicas_len = len(replicas)
+                    for replica_len in replicas:
+                        replica_state_list = replica_len['states']
+                        print("Replica (RSE) information:", replica_state_list)
+                        if 'null' not in replica_state_list:
+                            replicas_ind = []
+                            states_len = len(replica_state_list)
+                            for states_len in replica_state_list:
+                                print("Data available at:", states_len)
+                                if states_len not in tReplica_pScope:
+                                    tReplica_pScope.append(states_len)
+                    variable += 1
+                    print(variable)
+            print("Total RSEs where the data is for this scope:", tReplica_pScope)
+
+
+
         if push_to_es:
             rucio_scope_stats = {}
             rucio_scope_stats["producer"] = "escape_wp2"
-            rucio_scope_stats["type"] = "rucio_scope_stats"
+            rucio_scope_stats["type"] = "alba_scope_stats"
             rucio_scope_stats["timestamp"] = int(time.time())
             # schema:rucio_scope_stats (scope)
             rucio_scope_stats["scope"] = scope
@@ -193,6 +248,7 @@ def _print_scope_usage(push_to_es=False, es_url=None):
             rucio_scope_stats["datasets"] = datasets_count
             rucio_scope_stats["containers"] = containers_count
             rucio_scope_stats["files_bytes"] = fsize
+            rucio_scope_stats["replicas"] = tReplica_pScope
             _post_to_es(es_url, rucio_scope_stats)
 
         # experiments provision
@@ -211,7 +267,7 @@ def _print_scope_usage(push_to_es=False, es_url=None):
     if push_to_es:
         rucio_scope_stats = {}
         rucio_scope_stats["producer"] = "escape_wp2"
-        rucio_scope_stats["type"] = "rucio_scope_stats"
+        rucio_scope_stats["type"] = "alba_scope_stats"
         rucio_scope_stats["timestamp"] = int(time.time())
         # schema:rucio_scope_stats (scopes total)
         rucio_scope_stats["total_used"] = int(scope_total_used)
@@ -246,7 +302,7 @@ def _print_experiment_usage(push_to_es=False, es_url=None):
         if push_to_es:
             rucio_experiment_stats = {}
             rucio_experiment_stats["producer"] = "escape_wp2"
-            rucio_experiment_stats["type"] = "rucio_experiment_stats"
+            rucio_experiment_stats["type"] = "alba_experiment_stats"
             rucio_experiment_stats["timestamp"] = int(time.time())
             # schema:rucio_experiment_stats (experiment)
             rucio_experiment_stats["experiment"] = experiment
@@ -263,7 +319,7 @@ def _print_experiment_usage(push_to_es=False, es_url=None):
     if push_to_es:
         rucio_experiment_stats = {}
         rucio_experiment_stats["producer"] = "escape_wp2"
-        rucio_experiment_stats["type"] = "rucio_experiment_stats"
+        rucio_experiment_stats["type"] = "alba_experiment_stats"
         rucio_experiment_stats["timestamp"] = int(time.time())
         # schema:rucio_experiment_stats (experiments total)
         rucio_experiment_stats["total_used"] = experiment_total_used
