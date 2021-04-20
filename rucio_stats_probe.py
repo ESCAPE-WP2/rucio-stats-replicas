@@ -202,6 +202,7 @@ def _print_scope_usage(push_to_es=False, es_url=None):
         # Replica
         # This if is just for testing
         scope_limit = ['ESCAPE_CERN_TEAM-noise', 'SKA_SKAO_TEAM_MFT', 'MAGIC_PIC_BRUZZESE-test', 'SKA_SKAO_COLLINSON', 'SKA_SKAO_JOSHI-testing', 'CTA_LAPP_FREDERIC', 'LSST_CCIN2P3_GOUNON', 'SKA_SKAO_COLL-testing', 'SKA_SKAO_TEAM_PSS']
+        tReplica_pScope = []
         if scope not in scope_limit:
             # List total amount of dids in this scope
             # This is tmp, because the program don't want me to use the same did_len variable IDK why
@@ -209,7 +210,6 @@ def _print_scope_usage(push_to_es=False, es_url=None):
             print(dids_c)
             # Init variable for the loop (tmp, just for checking)
             variable = 0
-            tReplica_pScope = []
             # Loop: for all dids in this scope
             for dids_c in dids:
                 did_name = dids_c['name']
