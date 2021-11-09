@@ -74,9 +74,3 @@ statsd==3.3.0
 stevedore==3.3.0
 stomp.py==6.1.1
 tabulate==0.8.9
-typing-extensions==3.10.0.0
-urllib3==1.26.4
-web.py==0.62
-Werkzeug==2.0.1
-yarl==1.6.3
-zipp==3.5.0
