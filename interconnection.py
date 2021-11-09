@@ -62,7 +62,8 @@ def get_replicas(push_to_es=False, es_url=None):
 		for rse in rses_list:
 			rse_name = rse ['rse']
 			rse_qos = get_qos(rse_name)
-			#Get amount replicas for RSE
+
+			#Get amount replicas per RSE
 			query_rep = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse_name+"'")
 			query_rep_bytes = conn.execute("SELECT SUM(rep.bytes) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse_name+"'")
 
@@ -74,19 +75,22 @@ def get_replicas(push_to_es=False, es_url=None):
 			query_rep_B = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='B' AND scope='"+scope+"' AND rse='"+rse_name+"' AND state='B'")
 			query_rep_C = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='C' AND scope='"+scope+"' AND rse='"+rse_name+"' AND state='C'")
 			query_rep_U = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='U' AND scope='"+scope+"' AND rse='"+rse_name+"' AND state='U'")
-
+			
+			# Files, datasets, containers
 			tReplicasA = query_rep_A.first()[0]
 			tReplicasB = query_rep_B.first()[0]
 			tReplicasC = query_rep_C.first()[0]
 			tReplicasU = query_rep_U.first()[0]
 
-			# Files, datasets, containers
-
+			# Check if there are replicas:
 			if tReplicas > 0:
+				# Preparation for the experiment filter:
 				experiment_name = 'None'
 				for experiment in experiments:
-					if scope.startswith(experiment):
+					if scope.startswith(
+						experiment) and "test" not in scope and "TEST" not in scope:
 						experiment_name = experiment
+
 
 				# Replica info push
 				if push_to_es:
