@@ -8,11 +8,6 @@ import requests
 import argparse
 from datetime import datetime
 
-# import all needed rucio clients
-from rucio.client.rseclient import RSEClient
-from rucio.client.scopeclient import ScopeClient
-from rucio.client.didclient import DIDClient
-from rucio.client.replicaclient import ReplicaClient
 from rucio.db.sqla import session
 
 conn = session.get_session()
@@ -61,26 +56,17 @@ def get_replicas(push_to_es=False, es_url=None):
 			rse_qos = get_qos(rse)
 			
 			#Get amount replicas per RSE
-			query_rep = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"'")
-			query_rep_bytes = conn.execute("SELECT SUM(rep.bytes) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"'")
+			tReplicas = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"'").fetchone()
+			tReplicas_bytes = conn.execute("SELECT SUM(rep.bytes) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"'").fetchone()
 
-			tReplicas = query_rep.first()[0]
-			tReplicas_bytes = query_rep_bytes.first()[0]
-		
 			# Replica state
-			query_rep_A = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"' AND state='A'")
-			query_rep_B = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='B' AND scope='"+scope+"' AND rse='"+rse+"' AND state='B'")
-			query_rep_C = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='C' AND scope='"+scope+"' AND rse='"+rse+"' AND state='C'")
-			query_rep_U = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='U' AND scope='"+scope+"' AND rse='"+rse+"' AND state='U'")
-			
-			# Files, datasets, containers
-			tReplicasA = query_rep_A.first()[0]
-			tReplicasB = query_rep_B.first()[0]
-			tReplicasC = query_rep_C.first()[0]
-			tReplicasU = query_rep_U.first()[0]
+			tReplicasA = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='A' AND scope='"+scope+"' AND rse='"+rse+"' AND state='A'")
+			tReplicasB = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='B' AND scope='"+scope+"' AND rse='"+rse+"' AND state='B'")
+			tReplicasC = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='C' AND scope='"+scope+"' AND rse='"+rse+"' AND state='C'")
+			tReplicasU = conn.execute("SELECT COUNT(*) FROM replicas rep INNER JOIN rses r ON rep.rse_id=r.id WHERE state='U' AND scope='"+scope+"' AND rse='"+rse+"' AND state='U'")
 
 			# Check if there are replicas:
-			if tReplicas > 0:
+			if tReplicas[0] > 0:
 				# Preparation for the experiment filter:
 				experiment_name = 'None'
 				for experiment in experiments:
@@ -99,13 +85,13 @@ def get_replicas(push_to_es=False, es_url=None):
 					rucio_rep_stats["qos"] = rse_qos
 					rucio_rep_stats["experiment"] = experiment_name
 					
-					rucio_rep_stats["total_replicas"] = tReplicas	
-					rucio_rep_stats["total_replicas_bytes"] = tReplicas_bytes
+					rucio_rep_stats["total_replicas"] = tReplicas[0]	
+					rucio_rep_stats["total_replicas_bytes"] = tReplicas_bytes[0]
 
-					rucio_rep_stats["total_replicasA"] = tReplicasA
-					rucio_rep_stats["total_replicasB"] = tReplicasB	
-					rucio_rep_stats["total_replicasC"] = tReplicasC
-					rucio_rep_stats["total_replicasU"] = tReplicasU
+					rucio_rep_stats["total_replicasA"] = tReplicasA[0]
+					rucio_rep_stats["total_replicasB"] = tReplicasB[0]
+					rucio_rep_stats["total_replicasC"] = tReplicasC[0]
+					rucio_rep_stats["total_replicasU"] = tReplicasU[0]
 
 					_post_to_es(es_url, rucio_rep_stats)
 
