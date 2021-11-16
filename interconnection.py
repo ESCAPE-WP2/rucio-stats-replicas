@@ -3,13 +3,11 @@
 # import misc
 import math
 import json
-from os import ttyname
 import time
 import requests
 import argparse
 from datetime import datetime
 from rucio.db.sqla import session
-import sys
 
 session = session.get_session()
 
@@ -209,7 +207,7 @@ def main():
     es_url = args.es_url
 
     if push_to_es and es_url is None:
-        parser.error("--push requires --url.")
+        parser.error("--push requires --url")
 
     it = datetime.now()
     init_time = it.strftime("%H:%M:%S")
