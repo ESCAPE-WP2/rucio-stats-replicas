@@ -55,7 +55,6 @@ def get_replicas(push_to_es=False, es_url=None):
         rses_list.append(row[0])
 
     for scope in scopes_list:
-        rse_found, rse_found_bytes = {}, {}
 
         for rse in rses_list:
             rse_qos = get_qos(rse)
