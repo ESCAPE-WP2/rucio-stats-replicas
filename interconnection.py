@@ -123,10 +123,13 @@ def get_replicas(push_to_es=False, es_url=None):
                         rule.scope = replica.scope AND
                         rule.name = replica.name AND
                         rule.state = 'O' AND
-                        rule.rse_expression = '{rse}'
+                        (rule.rse_expression LIKE '%{rse}%' OR 
+                        rule.rse_expression LIKE '%QOS={rse_qos}%')
                 )
-            '''.format(scope=scope, rse=rse)
+            '''.format(scope=scope, rse=rse, rse_qos=rse_qos)
             results = dict(session.execute(query).fetchone())
+            if results["count"] != 0:
+                print(scope, rse, results)
 
             num_available_replicas_protected = results["count"]
             sum_bytes_available_replicas_protected = results["bytes"]
