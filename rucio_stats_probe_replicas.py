@@ -2,18 +2,65 @@
 
 # import misc
 import json
+import math
 import time
 import requests
 import argparse
+import logging
 from datetime import datetime
 from rucio.db.sqla import session
 
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%d/%m/%y %H:%M:%S %Z',
+                    level=logging.INFO)
+
+# get global session
 session = session.get_session()
 
 # global experiment info
 experiments = [
     "SKA", "LSST", "CTA", "LOFAR", "MAGIC", "ATLAS", "FAIR", "CMS", "VIRGO"
 ]
+
+
+def _pprint_size(size_bytes):
+    """
+    convert bytes to user friendly output
+    """
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1000, i)
+    s = round(size_bytes / p, 2)
+    return "{}{}".format(s, size_name[i])
+
+
+def _print_experiments():
+    """
+    print experiments
+    """
+    logging.info("EXPERIMENTS:")
+    for experiment in experiments:
+        logging.info("\t" + experiment)
+
+
+def _print_rses(rses_list):
+    """
+    print rses
+    """
+    logging.info("RSES:")
+    for rse in rses_list:
+        logging.info("\t" + rse)
+
+
+def _print_scopes(scope_list):
+    """
+    print scopes
+    """
+    logging.info("SCOPES:")
+    for scope in scope_list:
+        logging.info("\t" + scope)
 
 
 def _post_to_es(es_url, data_dict):
@@ -59,21 +106,28 @@ def get_replicas(push_to_es=False, es_url=None):
     get replicas per scope, per RSE
     """
 
-    # get all scopes
-    query_get_scopes = session.execute("SELECT scope FROM scopes")
-    scopes_list = []
-    for row in query_get_scopes:
-        scopes_list.append(row[0])
-
-    # get all rses
+    # get all rses & print them
     query_get_rses = session.execute("SELECT rse FROM rses")
     rses_list = []
     for row in query_get_rses:
         rses_list.append(row[0])
+    _print_rses(rses_list)
 
-    for scope in scopes_list:
+    # get all scopes & print them
+    query_get_scopes = session.execute("SELECT scope FROM scopes")
+    scopes_list = []
+    for row in query_get_scopes:
+        scopes_list.append(row[0])
+    _print_scopes(scopes_list)
 
-        for rse in rses_list:
+    # print experiments
+    _print_experiments()
+
+    logging.info("TOTAL REPLICA USAGE:")
+
+    for rse in rses_list:
+        logging.info("\tRSE:{}".format(rse))
+        for scope in scopes_list:
 
             # get QOS class for RSE
             rse_qos = get_qos(rse)
@@ -126,8 +180,6 @@ def get_replicas(push_to_es=False, es_url=None):
                 )
             '''.format(scope=scope, rse=rse, rse_qos=rse_qos)
             results = dict(session.execute(query).fetchone())
-            if results["count"] != 0:
-                print(scope, rse, results)
 
             num_available_replicas_protected = results["count"]
             sum_bytes_available_replicas_protected = results["bytes"]
@@ -150,6 +202,14 @@ def get_replicas(push_to_es=False, es_url=None):
                             experiment
                     ) and "test" not in scope and "TEST" not in scope:
                         experiment_name = experiment
+
+                logging.info(
+                    "\tSCOPE:{} (P)Replicas:[{}|{}] (U)Replicas:[{}|{}]".format(
+                        scope, num_available_replicas_protected,
+                        _pprint_size(sum_bytes_available_replicas_protected),
+                        num_replicas_with_no_rules,
+                        _pprint_size(
+                            sum_bytes_available_replicas_with_no_rules)))
 
                 # post protected replicas json
                 if push_to_es:
@@ -210,15 +270,7 @@ def main():
     if push_to_es and es_url is None:
         parser.error("--push requires --url")
 
-    it = datetime.now()
-    init_time = it.strftime("%H:%M:%S")
-    print("Started at:", init_time)
-
     get_replicas(push_to_es, es_url)
-
-    et = datetime.now()
-    end_time = et.strftime("%H:%M:%S")
-    print("Ended at:", end_time)
 
 
 if __name__ == '__main__':
