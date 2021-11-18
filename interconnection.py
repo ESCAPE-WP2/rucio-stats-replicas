@@ -123,8 +123,7 @@ def get_replicas(push_to_es=False, es_url=None):
                         rule.scope = replica.scope AND
                         rule.name = replica.name AND
                         rule.state = 'O' AND
-                        (rule.rse_expression LIKE '%{rse}%' OR 
-                        rule.rse_expression LIKE '%QOS={rse_qos}%')
+                        rule.rse_expression LIKE '%{rse}%'
                 )
             '''.format(scope=scope, rse=rse, rse_qos=rse_qos)
             results = dict(session.execute(query).fetchone())
