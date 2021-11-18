@@ -74,3 +74,4 @@ statsd==3.3.0
 stevedore==3.3.0
 stomp.py==6.1.1
 tabulate==0.8.9
+yapf==0.31.0

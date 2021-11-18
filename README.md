@@ -1,8 +1,5 @@
-# Rucio Stats Probe
-Probe that populates the [Rucio Stats dashboard](https://monit-grafana.cern.ch/d/74yXDN2Gk/rucio-stats?orgId=51).
-This script will print RSE, Scope and Experiment usage for a given Rucio instance.
-
-Optionally, it will push these statistics to an ES datasource, based on a predefined schema.
+# Rucio Stats Probe for Replica info
+Probe that populates the [Rucio Stats Replicas dashboard](https://monit-grafana.cern.ch/d/a74yXDN2Gk/rucio-stats-replicas?orgId=51).
 
 In order to run this code you will need to install the dependencies that can be found in the ```requirments.txt``` file:
 ```bash

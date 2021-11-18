@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # import misc
-import math
 import json
 import time
 import requests
@@ -193,7 +192,7 @@ def get_replicas(push_to_es=False, es_url=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Rucio Stats Interconnection Probe")
+        description="Rucio Stats Probe for Replicas")
     parser.add_argument("--push",
                         required=False,
                         action='store_true',
