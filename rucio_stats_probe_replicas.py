@@ -107,14 +107,15 @@ def get_replicas(push_to_es=False, es_url=None):
     """
 
     # get all rses & print them
-    query_get_rses = session.execute("SELECT rse FROM rses WHERE rse.deleted = 0")
+    query_get_rses = session.execute("SELECT rse FROM rses WHERE deleted = 0")
     rses_list = []
     for row in query_get_rses:
         rses_list.append(row[0])
     _print_rses(rses_list)
 
     # get all scopes & print them
-    query_get_scopes = session.execute("SELECT scope FROM scopes WHERE scope.status != 'D'")
+    query_get_scopes = session.execute(
+        "SELECT scope FROM scopes WHERE status != 'D'")
     scopes_list = []
     for row in query_get_scopes:
         scopes_list.append(row[0])
