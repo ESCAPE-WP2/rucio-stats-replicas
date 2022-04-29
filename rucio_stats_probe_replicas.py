@@ -205,8 +205,10 @@ def get_replicas(push_to_es=False, es_url=None):
                         experiment_name = experiment
 
                 logging.info(
-                    "\tSCOPE:{} (P)Replicas:[{}|{}] (U)Replicas:[{}|{}]".format(
-                        scope, num_available_replicas_protected,
+                    "\t\tSCOPE:{} EXP:{} QOS:{} (P)Replicas:[{}|{}] (U)Replicas:[{}|{}]"
+                    .format(
+                        scope, experiment_name, rse_qos,
+                        num_available_replicas_protected,
                         _pprint_size(sum_bytes_available_replicas_protected),
                         num_replicas_with_no_rules,
                         _pprint_size(
